@@ -1,1 +1,26 @@
+name: Synchroniser les points de vente
 
+on:
+  schedule:
+    - cron: "0 6 * * *"   # tous les jours à 06:00 UTC
+  workflow_dispatch:       # lancement manuel possible
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - run: python scripts/sync_pdv.py
+      - name: Enregistrer si changement
+        run: |
+          git config user.name "pdv-sync"
+          git config user.email "pdv-sync@users.noreply.github.com"
+          git add data/points-de-vente.json
+          git diff --staged --quiet || (git commit -m "Mise à jour des points de vente" && git push)
